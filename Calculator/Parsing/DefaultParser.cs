@@ -1,4 +1,5 @@
 ﻿using Calculator.Calculator.Expressions.Models;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -8,40 +9,63 @@ namespace Calculator.Calculator.Parsing
     {
         public List<MathObject> Parse(string stringExpression)
         {
-            List<MathObject> expression = new List<MathObject>();
+            List<MathObject> constructedExpression = new List<MathObject>();
 
-            int counterStart = NegativeStartNumberAdjustment(stringExpression, expression);
-            for (int i = counterStart; i < stringExpression.Length; i++)
+            int counterStart = AdjustForFirstNegative(stringExpression, constructedExpression);
+
+            for (int currentIndex = counterStart; currentIndex < stringExpression.Length; currentIndex++)
             {
-                if (Operator.IsOperator(stringExpression[i]))
+                if (Operator.IsOperator(stringExpression[currentIndex]))
                 {
-                    expression.Add(new Operator(stringExpression[i]));
-                    if (i < stringExpression.Length - 2 && stringExpression[i + 1] == '-')
-                    {
-                        i = AddNumberAndGetNextIndex(stringExpression, expression, i + 2, false);
-                    }
-                    continue;
+                    currentIndex = AddOperatorAndGetNextIndex(stringExpression, constructedExpression, currentIndex);
                 }
-                if (IsNumeric(stringExpression[i]))
+                else if (IsNumeric(stringExpression[currentIndex]))
                 {
-                    i = AddNumberAndGetNextIndex(stringExpression, expression, i);
-                    continue;
+                    currentIndex = AddNumberAndGetNextIndex(stringExpression, constructedExpression, currentIndex);
                 }
-                if (stringExpression[i] == '(')
+                else if (stringExpression[currentIndex] == '(')
                 {
-                    InsertMultiplicationIfRequired(stringExpression, expression, i);
-
-                    var start = i;
-                    while (++i < stringExpression.Length && !(stringExpression[i] == ')')) { }
-
-                    var stringSubExpression = new string(stringExpression.Skip(start + 1).Take(i - start - 1).ToArray());
-                    expression.Add(new Expression(Parse(stringSubExpression)));
+                    currentIndex = AddBracketsExpressionAndGetNextIndex(stringExpression, constructedExpression, currentIndex);
                 }
             }
-            return expression;
+
+            return constructedExpression;
         }
 
-        private static int NegativeStartNumberAdjustment(string stringExpression, List<MathObject> expression)
+        private static int AddOperatorAndGetNextIndex(string stringExpression, List<MathObject> expression, int i)
+        {
+            expression.Add(new Operator(stringExpression[i]));
+
+            if (i < stringExpression.Length - 2 && stringExpression[i + 1] == '-')
+            {
+                i = AddNumberAndGetNextIndex(stringExpression, expression, i + 2, false);
+            }
+
+            return i;
+        }
+
+        private int AddBracketsExpressionAndGetNextIndex(string stringExpression, List<MathObject> expression, int index)
+        {
+            InsertMultiplicationIfRequired(stringExpression, expression, index);
+
+            index++;
+            string stringSubExpression = ExtractStringMathObject(stringExpression, ref index, currentIndex => !(stringExpression[currentIndex] == ')'));
+
+            expression.Add(new Expression(Parse(stringSubExpression)));
+
+            return index;
+        }
+
+        private static int AddNumberAndGetNextIndex(string stringExpression, List<MathObject> expression, int numberStartIndex, bool asPositive = true)
+        {
+            string operand = ExtractStringMathObject(stringExpression, ref numberStartIndex, currentIndex => IsNumeric(stringExpression[currentIndex]));
+            expression.Add(new Operand(int.Parse(asPositive ? operand : $"-{operand}")));
+
+            numberStartIndex--;
+            return numberStartIndex;
+        }
+
+        private static int AdjustForFirstNegative(string stringExpression, List<MathObject> expression)
         {
             if (stringExpression.ElementAtOrDefault(0) == '-')
             {
@@ -52,16 +76,13 @@ namespace Calculator.Calculator.Parsing
             return 0;
         }
 
-        private static int AddNumberAndGetNextIndex(string stringExpression, List<MathObject> expression, int numberStartIndex, bool asPositive = true)
+        private static string ExtractStringMathObject(string expression, ref int startIndex, Func<int, bool> endCondition)
         {
-            var start = numberStartIndex;
-            while (++numberStartIndex < stringExpression.Length && IsNumeric(stringExpression[numberStartIndex])) { }
+            var start = startIndex;
+            while (++startIndex < expression.Length && endCondition(startIndex)) { }
 
-            var substring = stringExpression.Substring(start, numberStartIndex - start);
-            
-            expression.Add(new Operand(int.Parse(asPositive ? substring : $"-{substring}")));
-            numberStartIndex--;
-            return numberStartIndex;
+            var substring = expression.Substring(start, startIndex - start);
+            return substring;
         }
 
         private static void InsertMultiplicationIfRequired(string stringExpression, List<MathObject> expression, int index)

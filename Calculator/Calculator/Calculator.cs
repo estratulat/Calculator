@@ -32,22 +32,28 @@ namespace Calculator.Calculator
 
             while (currentPriority >= 0)
             {
-                for (int i = 0; i < expression.Count; i++)
-                {
-                    var op = expression[i] as Operator;
-                    if (op?.Priority == currentPriority)
-                    {
-                        sequence.Add(i);
-                    }
-                }
+                AddOperatorsToSequence(expression, sequence, currentPriority);
                 currentPriority--;
             }
             return sequence;
         }
 
+        private static void AddOperatorsToSequence(List<MathObject> expression, List<int> sequence, int currentPriority)
+        {
+            for (int i = 0; i < expression.Count; i++)
+            {
+                var op = expression[i] as Operator;
+                if (op?.Priority == currentPriority)
+                {
+                    sequence.Add(i);
+                }
+            }
+        }
+
         private Operand ConstructExpressionTree(List<MathObject> expression, int startIndex, int endIndex, IEnumerable<int> operatorSequenceIndices, int operatorTurn)
         {
-            if (endIndex == startIndex)
+            var oneElementTree = endIndex == startIndex;
+            if (oneElementTree)
             {
                 switch (expression[startIndex])
                 {
