@@ -1,4 +1,5 @@
 ﻿using Calculator.Calculator.Expressions.Models;
+using Calculator.Calculator.Parsing;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -7,6 +8,15 @@ namespace Calculator.Calculator
 {
     public class Calculator
     {
+        public IParser Parser { get; set; }
+
+        public Calculator() : this(new DefaultParser()) { }
+        public Calculator(IParser parser)
+        {
+            Parser = parser;
+        }
+
+        public int Calculate(string expression) => Calculate(Parser.Parse(expression));
         public int Calculate(List<MathObject> expression)
         {
             var operatorSequence = GetOperationSequenceIndices(expression);
@@ -14,6 +24,7 @@ namespace Calculator.Calculator
             operatorSequence = operatorSequence.Reverse();
             return ConstructExpressionTree(expression, 0, expression.Count - 1, operatorSequence, 0).Value;
         }
+
         private IEnumerable<int> GetOperationSequenceIndices(List<MathObject> expression)
         {
             List<int> sequence = new List<int>();

@@ -4,9 +4,9 @@ using System.Linq;
 
 namespace Calculator.Calculator.Parsing
 {
-    public class Parser
+    public class DefaultParser : IParser
     {
-        public static List<MathObject> Parse(string stringExpression)
+        public List<MathObject> Parse(string stringExpression)
         {
             List<MathObject> expression = new List<MathObject>();
 
