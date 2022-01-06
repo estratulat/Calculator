@@ -38,8 +38,18 @@ namespace Calculator.Calculator
 
         private Operand ConstructExpressionTree(List<MathObject> expression, int startIndex, int ensIndex, IEnumerable<int> operatorSequenceIndices, int operatorStep)
         {
-            if (ensIndex == startIndex) 
-                return expression[startIndex] as Operand; 
+            if (ensIndex == startIndex)
+            {
+                switch (expression[startIndex])
+                {
+                    case Operand op:
+                        return op;
+                    case Expression exp:
+                        return new Operand(Calculate(exp.mathObjects));
+                    default:
+                        break;
+                }
+            }
             return new ExpressionNode(
                 ConstructExpressionTree(expression, startIndex, operatorSequenceIndices.ElementAt(operatorStep) - 1, operatorSequenceIndices, operatorStep + 1),
                 ConstructExpressionTree(expression, operatorSequenceIndices.ElementAt(operatorStep) + 1, ensIndex, operatorSequenceIndices, operatorStep + 1),

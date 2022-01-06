@@ -1,6 +1,7 @@
 ﻿using Calculator.Calculator.Expressions.Models;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 
 namespace Calculator.Calculator.Parsing
@@ -20,16 +21,26 @@ namespace Calculator.Calculator.Parsing
                     expression.Add(new Operator(element));
                     continue;
                 }
-                if(int.TryParse(stringExpression[i].ToString(), out int _))
+                if(IsNumeric(stringExpression[i]))
                 {
                     var start = i;
-                    while(++i < stringExpression.Length && int.TryParse(stringExpression[i].ToString(), out int _)) { }
+                    while(++i < stringExpression.Length && IsNumeric(stringExpression[i])) { }
 
                     expression.Add(new Operand(int.Parse(stringExpression.Substring(start, i - start))));
                     i--;
                 }
+                if(stringExpression[i] == '(')
+                {
+                    var start = i;
+                    while (++i < stringExpression.Length && !(stringExpression[i] == ')')) { }
+
+                    var stringSubExpression = new string(stringExpression.Skip(start + 1).Take(i - start - 1).ToArray());
+                    expression.Add(new Expression(Parse(stringSubExpression)));
+                }
             }
             return expression;
         }
+
+        private static bool IsNumeric(char c) => int.TryParse(c.ToString(), out int _);
     }
 }

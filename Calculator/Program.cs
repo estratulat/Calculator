@@ -8,7 +8,7 @@ namespace Calculator
     {
         static void Main(string[] args)
         {
-            var expression = "10+110*110/110";
+            var expression = "(110+(10+110))*110/110 + 1";
             var res = Parser.Parse(expression);
             var calc = new Calculator.Calculator();
             var result = calc.Calculate(res);
