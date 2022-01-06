@@ -21,8 +21,9 @@ namespace Calculator.Calculator
         {
             var operatorSequence = GetOperationSequenceIndices(expression);
 
-            operatorSequence = operatorSequence.Reverse();
-            return ConstructExpressionTree(expression, 0, expression.Count - 1, operatorSequence, 0).Value;
+            var expressiontreeBuffer = new ExpressionTreeBuffer(expression, operatorSequence.Reverse(), expression => Calculate(expression));
+
+            return expressiontreeBuffer.GetExpressionTreeResult(0, expression.Count - 1, 0).Value;
         }
 
         private IEnumerable<int> GetOperationSequenceIndices(List<MathObject> expression)
@@ -50,56 +51,52 @@ namespace Calculator.Calculator
             }
         }
 
-        private Operand ConstructExpressionTree(List<MathObject> expression, int startIndex, int endIndex, IEnumerable<int> operatorSequenceIndices, int operatorTurn)
+        private class ExpressionTreeBuffer
         {
-            var oneElementTree = endIndex == startIndex;
-            if (oneElementTree)
+            public ExpressionTreeBuffer(List<MathObject> expression, IEnumerable<int> operatorSequenceIndices, Func<List<MathObject>, int> bracketExpressionCalculator)
             {
-                switch (expression[startIndex])
+                Expression = expression;
+                OperatorSequenceIndices = operatorSequenceIndices;
+                ExpressionCalculator = bracketExpressionCalculator;
+            }
+
+            List<MathObject> Expression { get; }
+            IEnumerable<int> OperatorSequenceIndices { get; }
+            Func<List<MathObject>, int> ExpressionCalculator { get; }
+
+            public Operand GetExpressionTreeResult(int startIndex, int endIndex, int operatorTurn)
+            {
+                var oneElementTree = endIndex == startIndex;
+                if (oneElementTree)
                 {
-                    case Operand op:
-                        return op;
-                    case Expression exp:
-                        return new Operand(Calculate(exp.mathObjects));
-                    default:
-                        break;
+                    switch (Expression[startIndex])
+                    {
+                        case Operand op:
+                            return op;
+                        case Expression exp:
+                            return new Operand(ExpressionCalculator(exp.mathObjects));
+                        default:
+                            break;
+                    }
                 }
+                return new ExpressionNode(
+                    GetExpressionTreeResult(startIndex, OperatorSequenceIndices.ElementAt(operatorTurn) - 1, operatorTurn + 1),
+                    GetExpressionTreeResult(OperatorSequenceIndices.ElementAt(operatorTurn) + 1, endIndex, operatorTurn + 1),
+                    Expression[OperatorSequenceIndices.ElementAt(operatorTurn)] as Operator);
             }
-            return new ExpressionNode(
-                ConstructExpressionTree(expression, startIndex, operatorSequenceIndices.ElementAt(operatorTurn) - 1, operatorSequenceIndices, operatorTurn + 1),
-                ConstructExpressionTree(expression, operatorSequenceIndices.ElementAt(operatorTurn) + 1, endIndex, operatorSequenceIndices, operatorTurn + 1),
-                expression[operatorSequenceIndices.ElementAt(operatorTurn)] as Operator);
-        }
-
-        private class ExpressionNode : Operand
-        {
-            public Operand First { get; set; }
-            public Operand Last { get; set; }
-
-            public Operator Operator { get; set; }
-
-            public override int Value => GetExpressionResult();
-            public ExpressionNode(Operand first, Operand last, Operator @operator)
+            private class ExpressionNode : Operand
             {
-                First = first;
-                Last = last;
-                Operator = @operator;
-            }
+                public Operand First { get; set; }
+                public Operand Last { get; set; }
 
-            private int GetExpressionResult()
-            {
-                switch (Operator.Value)
+                public Operator Operator { get; set; }
+
+                public override int Value => Operator.Apply(First, Last);
+                public ExpressionNode(Operand first, Operand last, Operator @operator)
                 {
-                    case '+':
-                        return First.Value + Last.Value;
-                    case '-':
-                        return First.Value - Last.Value;
-                    case '*':
-                        return First.Value * Last.Value;
-                    case '/':
-                        return First.Value / Last.Value;
-                    default:
-                        throw new InvalidOperationException();
+                    First = first;
+                    Last = last;
+                    Operator = @operator;
                 }
             }
         }
