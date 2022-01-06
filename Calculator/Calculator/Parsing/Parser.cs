@@ -12,24 +12,24 @@ namespace Calculator.Calculator.Parsing
         {
             List<MathObject> expression = new List<MathObject>();
 
-            for (int i = 0; i < stringExpression.Length; i++)
+            int counterStart = NegativeStartNumberAdjustment(stringExpression, expression);
+            for (int i = counterStart; i < stringExpression.Length; i++)
             {
-                var element = stringExpression[i];
-
-                if (Operator.IsOperator(element))
+                if (Operator.IsOperator(stringExpression[i]))
                 {
-                    expression.Add(new Operator(element));
+                    expression.Add(new Operator(stringExpression[i]));
+                    if (i < stringExpression.Length - 2 && stringExpression[i + 1] == '-')
+                    {
+                        i = AddNumberAndGetNextIndex(stringExpression, expression, i + 2, false);
+                    }
                     continue;
                 }
-                if(IsNumeric(stringExpression[i]))
+                if (IsNumeric(stringExpression[i]))
                 {
-                    var start = i;
-                    while(++i < stringExpression.Length && IsNumeric(stringExpression[i])) { }
-
-                    expression.Add(new Operand(int.Parse(stringExpression.Substring(start, i - start))));
-                    i--;
+                    i = AddNumberAndGetNextIndex(stringExpression, expression, i);
+                    continue;
                 }
-                if(stringExpression[i] == '(')
+                if (stringExpression[i] == '(')
                 {
                     InsertMultiplicationIfRequired(stringExpression, expression, i);
 
@@ -41,6 +41,29 @@ namespace Calculator.Calculator.Parsing
                 }
             }
             return expression;
+        }
+
+        private static int NegativeStartNumberAdjustment(string stringExpression, List<MathObject> expression)
+        {
+            if (stringExpression.ElementAtOrDefault(0) == '-')
+            {
+                var counter = AddNumberAndGetNextIndex(stringExpression, expression, 1, false);
+                return ++counter;
+            }
+
+            return 0;
+        }
+
+        private static int AddNumberAndGetNextIndex(string stringExpression, List<MathObject> expression, int numberStartIndex, bool asPositive = true)
+        {
+            var start = numberStartIndex;
+            while (++numberStartIndex < stringExpression.Length && IsNumeric(stringExpression[numberStartIndex])) { }
+
+            var substring = stringExpression.Substring(start, numberStartIndex - start);
+            
+            expression.Add(new Operand(int.Parse(asPositive ? substring : $"-{substring}")));
+            numberStartIndex--;
+            return numberStartIndex;
         }
 
         private static void InsertMultiplicationIfRequired(string stringExpression, List<MathObject> expression, int index)
