@@ -31,6 +31,8 @@ namespace Calculator.Calculator.Parsing
                 }
                 if(stringExpression[i] == '(')
                 {
+                    InsertMultiplicationIfRequired(stringExpression, expression, i);
+
                     var start = i;
                     while (++i < stringExpression.Length && !(stringExpression[i] == ')')) { }
 
@@ -39,6 +41,12 @@ namespace Calculator.Calculator.Parsing
                 }
             }
             return expression;
+        }
+
+        private static void InsertMultiplicationIfRequired(string stringExpression, List<MathObject> expression, int index)
+        {
+            if (index != 0 && IsNumeric(stringExpression[index - 1]))
+                expression.Add(new Operator('*'));
         }
 
         private static bool IsNumeric(char c) => int.TryParse(c.ToString(), out int _);
