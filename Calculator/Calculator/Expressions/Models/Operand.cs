@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace Calculator.Calculator.Expressions.Models
+﻿namespace Calculator.Calculator.Expressions.Models
 {
     public class Operand : MathObject
     {
@@ -11,6 +7,6 @@ namespace Calculator.Calculator.Expressions.Models
         {
             Value = value;
         }
-        public virtual int Value { get; set; }
+        public virtual int Value { get; }
     }
 }
